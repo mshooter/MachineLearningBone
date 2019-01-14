@@ -28,7 +28,7 @@ def createAssignedDataset():
 createAssignedDataset()
 image_shape = (len(images), 1,150,150)
 # create hdf5 file 
-h_file = h5py.File('/Users/moirashooter/RDProject/datasetFiles/data_sNs.hdf5', 'w')
+h_file = h5py.File('/Users/moirashooter/RDProject/datasetFiles/oneBone.hdf5', 'w')
 # write data into file
 h_file.create_dataset('dataset_images', image_shape, np.int8)
 h_file.create_dataset('dataset_labels', (len(images),), np.int8)

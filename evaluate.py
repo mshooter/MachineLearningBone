@@ -1,10 +1,16 @@
 import os 
+import cv2 as cv
 import time
 import h5py 
 import numpy as np 
 import tensorflow as tf
 from tensorflow import keras
 from sklearn.model_selection import train_test_split
+import matplotlib
+matplotlib.use('agg')
+import matplotlib.pyplot as plt
+from PIL import Image
+
 n_epochs = 5 
 n_batch_size = 32
 PS_OPS = [
@@ -34,16 +40,16 @@ def assign_to_device(device, ps_device):
     return _assign
  
 if isLinux:
-    model = keras.models.load_model("/home/s4928793/RDProject/modelsFinal/v02_model.hdf5")
+    model = keras.models.load_model("/home/s4928793/RDProject/modelsFinal/v03_model.hdf5")
+    model.load_weights("/home/s4928793/RDProject/modelsFinal/v03_weights.hdf5")
     f = h5py.File("/home/s4928793/RDProject/datasetFiles/data_sNs.hdf5", 'r')
 else: 
-    model = keras.models.load_model("/Users/moirashooter/RDProject/modelsFinal/v01_model.hdf5")
+    model = keras.models.load_model("/Users/moirashooter/RDProject/modelsFinal/v03_model.hdf5")
     f = h5py.File("/Users/moirashooter/RDProject/datasetFiles/data_sNs.hdf5", 'r')
 # get the data
 images = f['dataset_images']
 labels = f['dataset_labels']
 # strore them in np.arrays 
-
 np_images = np.array(images.value)
 np_labels = np.array(labels.value)
 # do something with data
@@ -61,16 +67,8 @@ with tf.device(assign_to_device('/gpu:0','/cpu:0')):
     label_val = keras.utils.to_categorical(label_val)
 
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy']) 
-# print model information 
-model.summary()
-model_json = model.to_json()
-with open("/home/s4928793/Desktop/model.json", "w") as json_file:
-    json_file.write(model_json)
 
-#start = time.time()
-#with tf.device('/gpu:0'):
-#    history = model.evaluate(images_val, label_val, verbose=1)
-#end = time.time() 
-#print("model took %0.2f seconds to evaluate" % (end-start))
-#print("%s: %0.4f" % (model.metrics_names[0], history[0]))
-#print("%s: %0.4f" % (model.metrics_names[1], history[1]))
+
+with tf.device('/gpu:0'):
+    predict = model.predict_classes(images_val)
+    print(predict[0], images_val[0][0].ndim)

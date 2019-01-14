@@ -1,7 +1,7 @@
 import time
 import os
 import matplotlib 
-matplotlib.use('agg')
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt 
 import numpy as np
 #from sklearn.cross_validation import train_test_split
@@ -10,9 +10,9 @@ import tensorflow as tf
 from tensorflow import keras
 import cv2
 
-linux = True
-n_epochs = 10
-n_error = 5
+isLinux = True  
+n_epochs = 5 
+n_batch_size = 200
 #----------------------------------------------------------------------------------------------------------------------------
 PS_OPS = [
     'Variable', 'VariableV2', 'AutoReloadVariable', 'MutableHashTable',
@@ -41,8 +41,8 @@ def assign_to_device(device, ps_device):
     return _assign
 #----------------------------------------------------------------------------------------------------------------------------
 # get the dataset it is stored in a hdf5
-import h5py 
-if linux:
+import h5py
+if isLinux:
     f = h5py.File("/home/s4928793/RDProject/datasetFiles/data_sNs.hdf5", 'r')
 else: 
     f = h5py.File("/Users/moirashooter/RDProject/datasetFiles/data_sNs.hdf5", 'r')
@@ -57,8 +57,9 @@ np_labels = np.array(labels.value)
 f.close()
 #----------------------------------------------------------------------------------------------------------------------------
 # split into training and test set (eg 80/20)
-with tf.device(assign_to_device('gpu:0', '/cpu:0')):
-    images_train, images_val, label_train, label_val = train_test_split(np_images, np_labels, test_size = 0.1, shuffle = True)
+# use gpu with linux 
+with tf.device(assign_to_device('/gpu:0','/cpu:0')):
+    images_train, images_val, label_train, label_val = train_test_split(np_images, np_labels, test_size = 0.1)
     # should I reshape? 
     images_train = images_train.reshape(images_train.shape[0], 150,150,1).astype('float32')
     images_val= images_val.reshape(images_val.shape[0], 150,150,1).astype('float32')
@@ -82,56 +83,61 @@ def showTrained():
 # should be adding convolutional layers
 # added drop out just to be sure
 model = keras.Sequential([   
-    keras.layers.Conv2D(120, kernel_size=5, activation='relu',input_shape=(150,150,1)),
+    keras.layers.Conv2D(64, kernel_size=5, activation='relu',input_shape=(150,150,1)),
     keras.layers.MaxPooling2D(pool_size=(2,2)),
-    keras.layers.Conv2D(64, kernel_size=5, activation='relu'),
-    keras.layers.BatchNormalization(),
-    keras.layers.Conv2D(64, kernel_size=3, activation='relu'),
+    keras.layers.Dropout(0.4),
+    keras.layers.Conv2D(32, kernel_size=5, activation='relu'),
     keras.layers.MaxPooling2D(pool_size=(2,2)),
+    keras.layers.Dropout(0.4),
+    keras.layers.Conv2D(32, kernel_size=5, activation='relu'),
+    keras.layers.MaxPooling2D(pool_size=(2,2)),
+    keras.layers.Dropout(0.5),
     keras.layers.Flatten(),
-    keras.layers.Dense(512, activation='relu'),
-    keras.layers.Dropout(0.6),
+    keras.layers.Dense(80, activation='relu'),
+    keras.layers.Dropout(0.3),
+    keras.layers.Dense(30, activation='relu'),
+    keras.layers.Dropout(0.5),
+    # two outputs
     keras.layers.Dense(2, activation=tf.nn.softmax)])
 #----------------------------------------------------------------------------------------------------------------------------
 # loss function - accuracy - minimize it  
 # optimizer - model is updated based on data and loss 
 # metrics - monitor training and test steps 
-model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+model.compile(optimizer=tf.keras.optimizers.Adam(lr=0.001), loss='binary_crossentropy', metrics=['accuracy'])
 # print model informatioon 
 model.summary()
 # early stop call back 
-earlystop = keras.callbacks.EarlyStopping(monitor='acc', min_delta = 0.001, patience=n_error, verbose =1, mode='auto') 
+earlystop = keras.callbacks.EarlyStopping(monitor='acc', min_delta = 0.0001, patience=5, verbose =1, mode='auto') 
 callbacks_list = [earlystop]
 #----------------------------------------------------------------------------------------------------------------------------
 # train - feed - labels and images 
 # model learns to associate 
 # model to make predications about a test set (test_images) - test labbels 
 start = time.time()
-with tf.device('gpu:0'):
-    history = model.fit(images_train, label_train, epochs=n_epochs,callbacks=callbacks_list,batch_size=12)
+with tf.device('/gpu:0'):
+    history = model.fit(images_train, label_train, epochs=n_epochs,callbacks=callbacks_list, batch_size = n_batch_size)
 end = time.time() 
 print("model took %0.2f seconds to train" % (end-start))
 print(history.history.keys())
+def plotHistory(historyVal):
+    # summarize history for accuraxy
+    plt.plot(historyVal['acc'])
+    plt.title('model accuracy')
+    plt.ylabel('accuracy')
+    plt.xlabel('epochs')
+    plt.legend(['train'], loc='upper left')
+    plt.savefig('/home/s4928793/Desktop/accuracy_epoch_plt.png') 
+    # summarizy history for loss
+    plt.plot(historyVal['loss'])
+    plt.title('model loss')
+    plt.ylabel('loss')
+    plt.xlabel('epochs')
+    plt.legend(['train', 'loss'], loc='upper left')
+    plt.savefig('/home/s4928793/Desktop/loss_epoch_plt.png') 
+plotHistory(history.history)
 #----------------------------------------------------------------------------------------------------------------------------
-# summarize history for accuraxy
-plt.plot(history.history['acc'])
-plt.plot(history.history['val_acc'])
-plt.title('model accuracy')
-plt.ylabel('accuracy')
-plt.xlabel('epoch')
-plt.legend(['train', 'test'], loc='upper left')
-plt.show() 
-# summarizy history for loss
-plt.plot(history.history['loss'])
-plt.plot(history.history['val_loss'])
-plt.title('model loss')
-plt.ylabel('loss')
-plt.xlabel('epoch')
-plt.legend(['train', 'test'], loc='upper left')
-plt.show()
-#----------------------------------------------------------------------------------------------------------------------------
-if linux:
-    model.save("/home/s4928793/RDProject/modelsFinal/v01_model.hdf5")
-    model.save_weights("/home/s4928793/RDProject/modelsFinal/v01_model_weights.hdf5")
+if isLinux:
+    model.save("/home/s4928793/RDProject/modelsFinal/v03_model.hdf5")
+    model.save_weights("/home/s4928793/RDProject/modelsFinal/v03_weights.hdf5")
 else:
     model.save("/Users/moirashooter/RDProject/modelsFinal/v01_model.hdf5")
