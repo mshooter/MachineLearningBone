@@ -1,25 +1,34 @@
+###-----------------------------------------------------------------------------------------------------------------------------------
+## author: Moira Shooter
+## nameOfFile: network_healthFactor.py
+## brief: This file was to train the neural network and save the model with its weights
+###-----------------------------------------------------------------------------------------------------------------------------------
 import time
 import os
 import matplotlib 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt 
 import numpy as np
-#from sklearn.cross_validation import train_test_split
 from sklearn.model_selection import train_test_split
 import tensorflow as tf 
 from tensorflow import keras
 import cv2
 
+#----------------------------------------------------------------------------------------------------------------------------
+# my variables
+#----------------------------------------------------------------------------------------------------------------------------
 isLinux = True  
 n_epochs = 5 
 n_batch_size = 200
+#----------------------------------------------------------------------------------------------------------------------------
+### The following section is from :-
+### tfboyd(2017). Placing Variables on the cpu using `tf.contrib.layers` functions [online]. [Accesses 2018]
+### Available from: "https://github.com/tensorflow/tensorflow/issues/9517".
 #----------------------------------------------------------------------------------------------------------------------------
 PS_OPS = [
     'Variable', 'VariableV2', 'AutoReloadVariable', 'MutableHashTable',
     'MutableHashTableOfTensors', 'MutableDenseHashTable'
 ]
-    
-# see https://github.com/tensorflow/tensorflow/issues/9517
 def assign_to_device(device, ps_device):
     """Returns a function to place variables on the ps_device.
 
@@ -39,6 +48,11 @@ def assign_to_device(device, ps_device):
         else:
             return device
     return _assign
+### end of Citation
+#----------------------------------------------------------------------------------------------------------------------------
+### The following section is from :-
+### Machine Learning Guru. Saving and loading a large number of images (data) into a single HDF5 file[online]. [Accesses 2018]
+### Available from: "http://machinelearninguru.com/deep_learning/data_preparation/hdf5/hdf5.html".
 #----------------------------------------------------------------------------------------------------------------------------
 # get the dataset it is stored in a hdf5
 import h5py
@@ -55,9 +69,11 @@ np_images = np.array(images.value)
 np_labels = np.array(labels.value)
 # do something with data
 f.close()
+### end of citation
 #----------------------------------------------------------------------------------------------------------------------------
 # split into training and test set (eg 80/20)
 # use gpu with linux 
+#----------------------------------------------------------------------------------------------------------------------------
 with tf.device(assign_to_device('/gpu:0','/cpu:0')):
     images_train, images_val, label_train, label_val = train_test_split(np_images, np_labels, test_size = 0.1)
     # should I reshape? 
@@ -67,21 +83,10 @@ with tf.device(assign_to_device('/gpu:0','/cpu:0')):
     label_train = keras.utils.to_categorical(label_train)
     label_val = keras.utils.to_categorical(label_val)
 #----------------------------------------------------------------------------------------------------------------------------
-# show the images to train
-def showTrained():
-    plt.figure(figsize=(10,10))
-    for i in range(5):
-        plt.subplot(5,5,i+1)
-        plt.xticks([])
-        plt.yticks([])
-        plt.grid(False)
-        plt.imshow(images_train[i], cmap = plt.cm.binary)
-        plt.xlabel(class_names[label_train[i]])
-    plt.show()
-#----------------------------------------------------------------------------------------------------------------------------
 # create model
 # should be adding convolutional layers
 # added drop out just to be sure
+#----------------------------------------------------------------------------------------------------------------------------
 model = keras.Sequential([   
     keras.layers.Conv2D(64, kernel_size=5, activation='relu',input_shape=(150,150,1)),
     keras.layers.MaxPooling2D(pool_size=(2,2)),
@@ -103,6 +108,7 @@ model = keras.Sequential([
 # loss function - accuracy - minimize it  
 # optimizer - model is updated based on data and loss 
 # metrics - monitor training and test steps 
+#----------------------------------------------------------------------------------------------------------------------------
 model.compile(optimizer=tf.keras.optimizers.Adam(lr=0.001), loss='binary_crossentropy', metrics=['accuracy'])
 # print model informatioon 
 model.summary()
@@ -113,12 +119,16 @@ callbacks_list = [earlystop]
 # train - feed - labels and images 
 # model learns to associate 
 # model to make predications about a test set (test_images) - test labbels 
+#----------------------------------------------------------------------------------------------------------------------------
 start = time.time()
 with tf.device('/gpu:0'):
     history = model.fit(images_train, label_train, epochs=n_epochs,callbacks=callbacks_list, batch_size = n_batch_size)
 end = time.time() 
 print("model took %0.2f seconds to train" % (end-start))
 print(history.history.keys())
+#----------------------------------------------------------------------------------------------------------------------------
+# plot history method 
+#----------------------------------------------------------------------------------------------------------------------------
 def plotHistory(historyVal):
     # summarize history for accuraxy
     plt.plot(historyVal['acc'])
@@ -136,8 +146,10 @@ def plotHistory(historyVal):
     plt.savefig('/home/s4928793/Desktop/loss_epoch_plt.png') 
 plotHistory(history.history)
 #----------------------------------------------------------------------------------------------------------------------------
+# save model and weights 
+#----------------------------------------------------------------------------------------------------------------------------
 if isLinux:
+    # saves model with weights
     model.save("/home/s4928793/RDProject/modelsFinal/v03_model.hdf5")
-    model.save_weights("/home/s4928793/RDProject/modelsFinal/v03_weights.hdf5")
 else:
-    model.save("/Users/moirashooter/RDProject/modelsFinal/v01_model.hdf5")
+    model.save("/Users/moirashooter/RDProject/modelsFinal/v03_model.hdf5")

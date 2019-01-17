@@ -1,7 +1,11 @@
+###-----------------------------------------------------------------------------------------------------------------------------------
+## author: Moira Shooter
+## nameOfFile: augmentation_images.py
+## brief: this script was used to augment the images, and store them in the correct folder with their name  
+###-----------------------------------------------------------------------------------------------------------------------------------
 import cv2
 import random
 import numpy as np 
-import matplotlib.pyplot as plt 
 import os
 from PIL import Image, ImageEnhance
 
@@ -9,7 +13,9 @@ from PIL import Image, ImageEnhance
 not_sick_path = "/Users/moirashooter/RDProject/dataset_sick_not_sick/not_sick"
 sick_path = "/Users/moirashooter/RDProject/dataset_sick_not_sick/sick"
 
+#--------------------------------------------------------------------------------------------------------------------------------------
 # debug function
+#--------------------------------------------------------------------------------------------------------------------------------------
 def test():
     trans_range = 5
     img = cv2.imread("/Users/moirashooter/RDProject/dataset_sick_not_sick/not_sick/142Oim__rec0973.jpg",0)
@@ -20,8 +26,9 @@ def test():
     trans_M = np.float32([[1,0,tr_x],[0,1,tr_y]])
     # write file
     print(img.shape)
-test()
-# final function 
+#--------------------------------------------------------------------------------------------------------------------------------------
+# flip function 
+#--------------------------------------------------------------------------------------------------------------------------------------
 def imageFlip(path):
     for file in os.listdir(path):
         if file.endswith(".jpg"):
@@ -34,9 +41,11 @@ def imageFlip(path):
             cv2.imwrite(path + "/flh_" + file, flipped_imgh)
             cv2.imwrite(path + "/flv_" + file, flipped_imgv)
             cv2.imwrite(path + "/flb_" + file, flipped_imgb)
-
+#--------------------------------------------------------------------------------------------------------------------------------------
+# image translate function
+#--------------------------------------------------------------------------------------------------------------------------------------
 def imageTranslate(path):
-    # trans_range: range f values to apply translatios over 
+    # trans_range: range f values to apply translations over 
     trans_range = 300 
     for file in os.listdir(path):
         if file.endswith(".jpg"):
@@ -48,7 +57,9 @@ def imageTranslate(path):
             # write file
             img = cv2.warpAffine(img, trans_M, (960,960))
             cv2.imwrite(path + "/t_" +file, img)
-                        
+#--------------------------------------------------------------------------------------------------------------------------------------
+# change brightness of image function 
+#--------------------------------------------------------------------------------------------------------------------------------------
 def random_brightness(path):
     for file in os.listdir(path):
         if file.endswith(".jpg"):
@@ -57,5 +68,4 @@ def random_brightness(path):
             contrast = ImageEnhance.Contrast(img)
             contrast = contrast.enhance(randomNumb)
             contrast.save(path + "/con_" + file)
-
-# main function
+#--------------------------------------------------------------------------------------------------------------------------------------
