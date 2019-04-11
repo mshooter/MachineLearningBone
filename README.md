@@ -1,4 +1,4 @@
-# Internal Bone Reconstruction using Machine Learning
+# 3D Reconstruction of porous object using Machine learning
 
 For my Research and Development unit (Bournemouth University Level6) I decided to 3D reconstruct a porous object such as a bone with the help of machine learning. The database that we used were mice tibia CT-scans.
 I collaborated with a classmate, Lucien Hugueniot. 
